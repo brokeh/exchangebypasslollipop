@@ -4,8 +4,10 @@ import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
+import java.lang.NoSuchMethodError;
 
 import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
+import static de.robv.android.xposed.XposedHelpers.findAndHookConstructor;
 import static de.robv.android.xposed.XposedHelpers.setBooleanField;
 import static de.robv.android.xposed.XposedHelpers.setIntField;
 
@@ -48,31 +50,52 @@ public class Main implements IXposedHookLoadPackage {
             {
                 XposedBridge.log("Loaded app v3: " + lpparam.packageName);
 
-                findAndHookMethod("com.acompli.accore.util.OutlookDevicePolicy", lpparam.classLoader, "requiresDeviceManagement", new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    }
+                try
+                {
+	                findAndHookMethod("com.acompli.accore.util.OutlookDevicePolicy", lpparam.classLoader, "requiresDeviceManagement", new XC_MethodHook() {
+	                    @Override
+	                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+	                    }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        Boolean ret = false;
-                        param.setResult(ret);
-                        XposedBridge.log("All Set for requiresDeviceManagement");
-                    }
-                });
+	                    @Override
+	                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+	                        Boolean ret = false;
+	                        param.setResult(ret);
+	                        XposedBridge.log("All Set for requiresDeviceManagement");
+	                    }
+	                });
 
-                findAndHookMethod("com.acompli.accore.util.OutlookDevicePolicy", lpparam.classLoader, "isPolicyApplied", new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    }
+	                findAndHookMethod("com.acompli.accore.util.OutlookDevicePolicy", lpparam.classLoader, "isPolicyApplied", new XC_MethodHook() {
+	                    @Override
+	                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+	                    }
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        Boolean ret = true;
-                        param.setResult(ret);
-                        XposedBridge.log("All Set for isPolicyApplied");
-                    }
-                });
+	                    @Override
+	                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+	                        Boolean ret = true;
+	                        param.setResult(ret);
+	                        XposedBridge.log("All Set for isPolicyApplied");
+	                    }
+	                });
+	            }
+	            catch (NoSuchMethodError e)
+	            {
+                	XposedBridge.log("Got NoSuchMethodError " + e.getMessage() + ". Might be a newer version of outlook. Trying different approach.");
+
+	                findAndHookConstructor("com.acompli.accore.util.OutlookDevicePolicy", lpparam.classLoader, String.class, boolean.class, boolean.class, boolean.class, int.class, int.class, int.class, new XC_MethodHook() {
+	                    @Override
+	                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+	                    	param.args[1] = true; //isPolicyApplied
+	                    	param.args[2] = false; //isPasswordRequired
+	                        XposedBridge.log("All Set for constructor");
+	                    }
+
+	                    @Override
+	                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+	                    }
+	                });
+
+	            }
             }
             catch (Exception e)
             {
